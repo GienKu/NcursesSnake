@@ -15,7 +15,7 @@ void draw_board(WINDOW * plansza,WINDOW * wynik)
     init_pair(2,SNAKE_COLOR,BG_COLOR);   //snake
     init_pair(5,154,17);
 
-    wbkgd(wynik,COLOR_PAIR(3)); //bg color
+    wbkgd(wynik,COLOR_PAIR(5)); //bg color
     //SCORE
     box(wynik,0,0);
     mvwprintw(wynik,0,1,"Score");
@@ -182,6 +182,9 @@ void main_game_loop()
     bool is_alive = true;
     char actual_move = 'd',next_move;
 
+    mvwprintw(score,1,1,"%i",scr);
+    wrefresh(score);
+
     getmaxyx(plansza,yPl,xPl);
     for( int i = 0; i < 3; i++)
     {
@@ -207,10 +210,10 @@ void main_game_loop()
             if(is_food(plansza,&new_head))
             {
                 snake_length += 1;
-                scr += 1;
 
-                mvprintw(LINES/2-14,COLS/2-31,"%i",scr);
-                refresh();
+                scr += 1;
+                mvwprintw(score,1,1,"%i",scr);
+                wrefresh(score);
 
                 snake_length_change(&snake_parts,snake_length);
                 create_food(plansza);

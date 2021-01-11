@@ -7,7 +7,6 @@ typedef struct Player
     int x;
     int y;
 }Player;
-//atrybuty,kolory,rysowanie planszy
 void draw_board(WINDOW * plansza,WINDOW * wynik);
 
 void create_food(WINDOW *plansza);
