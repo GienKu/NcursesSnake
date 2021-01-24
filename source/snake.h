@@ -28,4 +28,6 @@ bool is_good_move(char act_mv,char next_mv);
 void main_game_loop(int level);
 
 void main_menu();
+
+void game_over(WINDOW *plansza, WINDOW *score);
 #endif

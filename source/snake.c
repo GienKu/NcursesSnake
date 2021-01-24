@@ -1,19 +1,21 @@
 #include <ncurses.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <time.h>
 #include "snake.h"
 
 #define BG_COLOR 40
+#define SECOND_COLOR 38
 #define SNAKE_COLOR 22
 
 //atrybuty,kolory,rysowanie planszy
 void draw_board(WINDOW * plansza,WINDOW * wynik)
 {
 	start_color();
-	init_pair(1,COLOR_YELLOW,BG_COLOR);  //krawedzie
-    init_pair(2,SNAKE_COLOR,BG_COLOR);   //snake
-    init_pair(5,154,17);
+	init_pair(1,COLOR_YELLOW,BG_COLOR);   //krawedzie
+    init_pair(2,SNAKE_COLOR,BG_COLOR);    //snake
+    init_pair(5,154,SECOND_COLOR);                  //score     
 
     wbkgd(wynik,COLOR_PAIR(5)); //bg color
     //SCORE
@@ -101,11 +103,11 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
 {
     int yNext = (*snake_ptr)->y;
     int xNext = (*snake_ptr)->x;
-    switch (action)
+    switch ((int)action)
     {
         case 'w':
         case 'W':
-        case (char)KEY_UP:
+        case KEY_UP:
             new_head->y = yNext-1;
             new_head->x = xNext;
             if(collision(yNext-1,xNext,plansza))return true;
@@ -113,7 +115,7 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
             break;
         case 'a':
         case 'A':
-        case (char)KEY_LEFT:
+        case KEY_LEFT:
             new_head->y = yNext;
             new_head->x = xNext-2;
             if (collision(yNext,xNext-2,plansza))return true;
@@ -121,7 +123,7 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
             break;
         case 's':
         case 'S':
-        case (char)KEY_DOWN:
+        case KEY_DOWN:
             new_head->y = yNext+1;
             new_head->x = xNext;
             if (collision(yNext+1,xNext,plansza))return true;
@@ -129,7 +131,7 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
             break;
         case 'd':
         case 'D':
-        case (char)KEY_RIGHT:
+        case KEY_RIGHT:
             new_head->y = yNext;
             new_head->x = xNext+2;
             if (collision(yNext,xNext+2,plansza))return true;
@@ -214,60 +216,65 @@ void main_game_loop(int level)
 
     while(is_alive)
     {
-        if((next_move = wgetch(plansza))  == ERR)
+        if((next_move = wgetch(plansza))  == ERR)                       //Sprawdzenie czy wprowadzony został nowy klawisz
             ;
-        else if(is_good_move(actual_move,next_move))
+        else if(is_good_move(actual_move,next_move))                    //zmiana aktualnego kierunku jesli nowy nie jest w przeciwny do aktualnego
             actual_move = next_move;
-        if(which_direction(&snake_parts,actual_move,plansza,&new_head))
+        if(which_direction(&snake_parts,actual_move,plansza,&new_head)) //sprawdzenie kolizji
         {
-            if(is_food(plansza,&new_head))
+            if(is_food(plansza,&new_head))                              //sprawdzenie czy dane nowe pole nie jest jedzeniem
             {
-                snake_length += 1;
+                snake_length += 1;                                      
+                scr += 1;                                               
+                mvwprintw(score,1,1,"%i",scr);                          
+                wrefresh(score);                                        
 
-                scr += 1;
-                mvwprintw(score,1,1,"%i",scr);
-                wrefresh(score);
-
-                snake_length_change(&snake_parts,snake_length);
+                snake_length_change(&snake_parts,snake_length);         //dynamiczna zmiana wielkosci snake'a
                 create_food(plansza);
             }
-            tail_change(snake_parts,&new_head,plansza,snake_length);
+            tail_change(snake_parts,&new_head,plansza,snake_length);    //zmiana zmiana koordynatów snake'a
         }
-        else mark_wall(plansza,&new_head);           
+        else 
+        {
+            is_alive = false;
+            mark_wall(plansza,&new_head); 
+            game_over(plansza,score);
+        }          
     }
+    main_menu();
 }
 void main_menu()
 {
     WINDOW *MenuContainer = newwin(LINES, COLS, 0, 0);
     WINDOW *MenuPanel = subwin(MenuContainer, 10, 28, LINES/2, COLS/2-8);
-    WINDOW *MenuAscii = subwin(MenuContainer, LINES/2,79,1,COLS/2-39);
-    FILE *chess;
+    WINDOW *GameOver = subwin(MenuContainer, LINES/2,79,1,COLS/2-39);
+    FILE *picture;
     char ch;
     
     init_pair(23, 89, 107);                     //font-roz, backg- zielen
     init_pair(24, 107, 89);                     //na odwrot^
     init_pair(25,COLOR_WHITE,COLOR_BLACK);      //standardowy kolor terminala
-    bkgd(COLOR_PAIR(23));                       //bgcolor MenuContainer
-    wbkgd(MenuAscii,COLOR_PAIR(23));            //bgcolor MenuAscii
+    bkgd(COLOR_PAIR(23));                       //bgcolor stdrscr
+    wbkgd(GameOver,COLOR_PAIR(23));            //bgcolor GameOver
     wbkgd(MenuPanel,COLOR_PAIR(23));            //bgcolor MenuPanel
 
-    chess = fopen("obrazek.txt","r");
-    if(chess == NULL)
-    {   wprintw(MenuAscii,"Error, nie udalo otworzyc sie pliku");
-        wrefresh(MenuAscii);
+    picture = fopen("obrazek.txt","r");
+    if(picture == NULL)
+    {   wprintw(GameOver,"Error, nie udalo otworzyc sie pliku");
+        wrefresh(GameOver);
     }
-    wmove(MenuAscii,0,0);
+    wmove(GameOver,0,0);
 
     // WYSWIETLENIE ASCII ART
-    wattron(MenuAscii,COLOR_PAIR(23) | A_BOLD);
-    while((ch = fgetc(chess)) != EOF)
-        waddch(MenuAscii,ch);
-    wattroff(MenuAscii,COLOR_PAIR(23) | A_BOLD);
+    wattron(GameOver,COLOR_PAIR(23) | A_BOLD);
+    while((ch = fgetc(picture)) != EOF)
+        waddch(GameOver,ch);
+    wattroff(GameOver,COLOR_PAIR(23) | A_BOLD);
 
-    fclose(chess);
+    fclose(picture);
     refresh();
     wrefresh(MenuPanel);
-    wrefresh(MenuAscii);
+    wrefresh(GameOver);
     
     // OPCJE MENU
     mvwprintw(MenuPanel,0,1,"Wybierz poziom trudnosci:");
@@ -303,9 +310,13 @@ void main_menu()
         act = wgetch(MenuPanel);
         switch (act)
         {
+            case (int)'w':
+            case (int)'W':
             case KEY_UP:
                 highlight--;
                 break;
+            case (int)'s':
+            case (int)'S':
             case KEY_DOWN:
                 highlight++;
                 break;
@@ -342,4 +353,41 @@ void main_menu()
         default:
             break;
     }
+}
+void game_over(WINDOW *plansza, WINDOW *score)
+{
+    WINDOW *GameOver = newwin(6, 52, LINES/2-3, COLS/2-25);
+    FILE *picture;
+    char ch;
+    init_pair(20, COLOR_RED, SECOND_COLOR);
+    init_pair(11, COLOR_WHITE, COLOR_BLACK);
+    wbkgd(GameOver,COLOR_PAIR(20));
+    picture = fopen("gameover.txt","r");
+    if(picture == NULL)
+    {   wprintw(GameOver,"Error, nie udalo otworzyc sie pliku");
+        wrefresh(GameOver);
+    }
+    wmove(GameOver,0,0);
+
+    // WYSWIETLENIE ASCII ART
+    wattron(GameOver, A_BOLD);
+    while((ch = fgetc(picture)) != EOF)
+        waddch(GameOver,ch);
+    wattroff(GameOver, A_BOLD);
+    fclose(picture);
+    wrefresh(GameOver);
+    mvprintw(LINES/2+22, COLS/2-21,"Wcisnij dowolny klawisz by wrocic do menu");
+    getch();
+    getch();
+     
+    clear();
+    wclear(plansza);
+    wclear(score);
+    refresh();
+    wrefresh(plansza);
+    wrefresh(score);
+    wbkgd(plansza,COLOR_PAIR(11));
+    wbkgd(score,COLOR_PAIR(11));
+    delwin(GameOver);
+
 }
