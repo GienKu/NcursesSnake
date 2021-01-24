@@ -7,9 +7,10 @@ int main()
 {
     srand(time(NULL));
 	initscr();
+    start_color();
     cbreak();
     noecho();
-    main_game_loop();
+    main_menu();
 	getch();
 	endwin();
 }

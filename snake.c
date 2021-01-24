@@ -171,7 +171,7 @@ bool is_good_move(char act_mv,char next_mv)
     }
     return true;
 }
-void main_game_loop()
+void main_game_loop(int level)
 {
     WINDOW *score = newwin(3,7,LINES/2-15,COLS/2-32);
     WINDOW *plansza = newwin(25,65,LINES/2-12,COLS/2-32);
@@ -197,7 +197,20 @@ void main_game_loop()
     create_food(plansza);
     getch();
     keypad(plansza,true);
-    wtimeout(plansza,100);
+    switch (level)
+    {
+    case 0:
+        wtimeout(plansza,125);
+        break;
+    case 1:
+        wtimeout(plansza,100);
+        break;
+    case 2:
+        wtimeout(plansza,75);
+        break;
+    default:
+        wtimeout(plansza,100);
+    }
 
     while(is_alive)
     {
@@ -221,5 +234,112 @@ void main_game_loop()
             tail_change(snake_parts,&new_head,plansza,snake_length);
         }
         else mark_wall(plansza,&new_head);           
+    }
+}
+void main_menu()
+{
+    WINDOW *MenuContainer = newwin(LINES, COLS, 0, 0);
+    WINDOW *MenuPanel = subwin(MenuContainer, 10, 28, LINES/2, COLS/2-8);
+    WINDOW *MenuAscii = subwin(MenuContainer, LINES/2,79,1,COLS/2-39);
+    FILE *chess;
+    char ch;
+    
+    init_pair(23, 89, 107);                     //font-roz, backg- zielen
+    init_pair(24, 107, 89);                     //na odwrot^
+    init_pair(25,COLOR_WHITE,COLOR_BLACK);      //standardowy kolor terminala
+    bkgd(COLOR_PAIR(23));                       //bgcolor MenuContainer
+    wbkgd(MenuAscii,COLOR_PAIR(23));            //bgcolor MenuAscii
+    wbkgd(MenuPanel,COLOR_PAIR(23));            //bgcolor MenuPanel
+
+    chess = fopen("obrazek.txt","r");
+    if(chess == NULL)
+    {   wprintw(MenuAscii,"Error, nie udalo otworzyc sie pliku");
+        wrefresh(MenuAscii);
+    }
+    wmove(MenuAscii,0,0);
+
+    // WYSWIETLENIE ASCII ART
+    wattron(MenuAscii,COLOR_PAIR(23) | A_BOLD);
+    while((ch = fgetc(chess)) != EOF)
+        waddch(MenuAscii,ch);
+    wattroff(MenuAscii,COLOR_PAIR(23) | A_BOLD);
+
+    fclose(chess);
+    refresh();
+    wrefresh(MenuPanel);
+    wrefresh(MenuAscii);
+    
+    // OPCJE MENU
+    mvwprintw(MenuPanel,0,1,"Wybierz poziom trudnosci:");
+    keypad(MenuPanel,true);
+    char choices[4][12] = {
+        "Latwy",
+        "Sredni",
+        "Trudny",
+        "Wyjdz z gry"
+    };
+    bool isPicked = false;
+    int highlight = 0;
+    int act;
+    wmove(MenuPanel,1,1);
+
+    // PETLA WYBORU
+    while(!isPicked)
+    {
+        for(int i = 0; i < 4; i++)
+        {
+            if(i == highlight)
+            {   
+                wattron(MenuPanel,COLOR_PAIR(24));
+                mvwaddstr(MenuPanel, i+1, 1, choices[i]);
+                wattroff(MenuPanel,COLOR_PAIR(24));
+            }
+            else
+                mvwprintw(MenuPanel, i+1, 1, "%s", choices[i]);
+        }
+        wrefresh(MenuPanel);
+        refresh();
+
+        act = wgetch(MenuPanel);
+        switch (act)
+        {
+            case KEY_UP:
+                highlight--;
+                break;
+            case KEY_DOWN:
+                highlight++;
+                break;
+            case 10://enter
+                isPicked = true;
+                break;
+            default:
+                continue;
+        }
+        if(highlight > 3) highlight--;
+        if(highlight < 0) highlight++;
+    }
+    
+	wclear(MenuContainer);
+	bkgd(COLOR_PAIR(25));
+	delwin(MenuContainer);
+	clear();
+    
+    switch (highlight)
+    {
+        case 0:
+            main_game_loop(0);
+            break;
+        case 1:
+            main_game_loop(1);
+            break;
+        case 2:
+            main_game_loop(2);
+            break;
+        case 3:
+            endwin();
+            exit(0);
+            break;
+        default:
+            break;
     }
 }

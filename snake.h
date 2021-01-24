@@ -25,5 +25,7 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
 
 bool is_good_move(char act_mv,char next_mv);
 
-void main_game_loop();
+void main_game_loop(int level);
+
+void main_menu();
 #endif
