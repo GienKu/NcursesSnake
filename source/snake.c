@@ -13,16 +13,16 @@
 void draw_board(WINDOW * plansza,WINDOW * wynik)
 {
 	start_color();
-	init_pair(1,COLOR_YELLOW,BG_COLOR);   //krawedzie
-    init_pair(2,SNAKE_COLOR,BG_COLOR);    //snake
-    init_pair(5,154,SECOND_COLOR);                  //score     
+	init_pair(1,COLOR_YELLOW,BG_COLOR);     //krawedzie
+    init_pair(2,SNAKE_COLOR,BG_COLOR);      //snake
+    init_pair(5,154,SECOND_COLOR);          //score     
 
-    wbkgd(wynik,COLOR_PAIR(5)); //bg color
+    wbkgd(wynik,COLOR_PAIR(5));             //bg color
     //SCORE
     box(wynik,0,0);
     mvwprintw(wynik,0,1,"Score");
     //Plansza
-    wbkgd(plansza,COLOR_PAIR(2)); //bg color
+    wbkgd(plansza,COLOR_PAIR(2));           //bg color
 	wattron(plansza,COLOR_PAIR(1));
 	box(plansza,ACS_VLINE,ACS_HLINE);
 	printw("Test snake");
@@ -99,11 +99,11 @@ void mark_wall(WINDOW * plansza,Player *new_head)
     mvwaddch(plansza,y,x,'x' | COLOR_PAIR(3));
 }
 //sprawdzenie kierunku poruszania sie snake'a
-bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new_head)
+bool which_direction(Player **snake_ptr, int action,WINDOW *plansza,Player *new_head)
 {
     int yNext = (*snake_ptr)->y;
     int xNext = (*snake_ptr)->x;
-    switch ((int)action)
+    switch (action)
     {
         case 'w':
         case 'W':
@@ -142,32 +142,32 @@ bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new
             return true;
     }
 }
-bool is_good_move(char act_mv,char next_mv)
+bool is_good_move(int act_mv,int next_mv)
 {
     switch (next_mv)
     {
         case 'w':
         case 'W':
-        case (char)KEY_UP:
-            if(act_mv == 's' || act_mv == 'S' || act_mv == (char)KEY_DOWN)
+        case KEY_UP:
+            if(act_mv == 's' || act_mv == 'S' || act_mv == KEY_DOWN)
                 return false;
             break;
         case 'a':
         case 'A':
-        case (char)KEY_LEFT:
-            if(act_mv == 'd' || act_mv == 'D' || act_mv == (char)KEY_RIGHT)
+        case KEY_LEFT:
+            if(act_mv == 'd' || act_mv == 'D' || act_mv == KEY_RIGHT)
                 return false;
             break;
         case 's':
         case 'S':
-        case (char)KEY_DOWN:
-            if(act_mv == 'w' || act_mv == 'W' || act_mv == (char)KEY_UP)
+        case KEY_DOWN:
+            if(act_mv == 'w' || act_mv == 'W' || act_mv == KEY_UP)
                 return false;
             break;
         case 'd':
         case 'D':
-        case (char)KEY_RIGHT:
-            if(act_mv == 'a' || act_mv == 'd' || act_mv == (char)KEY_LEFT)
+        case KEY_RIGHT:
+            if(act_mv == 'a' || act_mv == 'd' || act_mv == KEY_LEFT)
                 return false;
             break;
     }
@@ -180,9 +180,10 @@ void main_game_loop(int level)
     Player *snake_parts = malloc( 4 * sizeof(Player));
     Player new_head; 
 
+    keypad(plansza,true);
     int yPl,xPl,snake_length = 3,scr = 0;
     bool is_alive = true;
-    char actual_move = 'd',next_move;
+    int actual_move = KEY_RIGHT,next_move;
 
     mvwprintw(score,1,1,"%i",scr);
     wrefresh(score);
@@ -198,7 +199,6 @@ void main_game_loop(int level)
     draw_board(plansza,score);
     create_food(plansza);
     getch();
-    keypad(plansza,true);
     switch (level)
     {
     case 0:
@@ -220,11 +220,12 @@ void main_game_loop(int level)
             ;
         else if(is_good_move(actual_move,next_move))                    //zmiana aktualnego kierunku jesli nowy nie jest w przeciwny do aktualnego
             actual_move = next_move;
+            
         if(which_direction(&snake_parts,actual_move,plansza,&new_head)) //sprawdzenie kolizji
         {
             if(is_food(plansza,&new_head))                              //sprawdzenie czy dane nowe pole nie jest jedzeniem
             {
-                snake_length += 1;                                      
+                snake_length += 1;                                     
                 scr += 1;                                               
                 mvwprintw(score,1,1,"%i",scr);                          
                 wrefresh(score);                                        
@@ -255,7 +256,7 @@ void main_menu()
     init_pair(24, 107, 89);                     //na odwrot^
     init_pair(25,COLOR_WHITE,COLOR_BLACK);      //standardowy kolor terminala
     bkgd(COLOR_PAIR(23));                       //bgcolor stdrscr
-    wbkgd(GameOver,COLOR_PAIR(23));            //bgcolor GameOver
+    wbkgd(GameOver,COLOR_PAIR(23));             //bgcolor GameOver
     wbkgd(MenuPanel,COLOR_PAIR(23));            //bgcolor MenuPanel
 
     picture = fopen("obrazek.txt","r");
@@ -379,7 +380,7 @@ void game_over(WINDOW *plansza, WINDOW *score)
     mvprintw(LINES/2+22, COLS/2-21,"Wcisnij dowolny klawisz by wrocic do menu");
     getch();
     getch();
-     
+
     clear();
     wclear(plansza);
     wclear(score);

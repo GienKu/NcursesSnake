@@ -21,9 +21,9 @@ void tail_change(Player *snake_ptr,Player *new_head,WINDOW * plansza,int s_len);
 
 void mark_wall(WINDOW * plansza,Player *new_head);
 //movement
-bool which_direction(Player **snake_ptr, char action,WINDOW *plansza,Player *new_head);
+bool which_direction(Player **snake_ptr, int action,WINDOW *plansza,Player *new_head);
 
-bool is_good_move(char act_mv,char next_mv);
+bool is_good_move(int act_mv,int next_mv);
 
 void main_game_loop(int level);
 
