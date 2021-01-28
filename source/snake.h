@@ -1,27 +1,28 @@
-#include<ncurses.h>
-#ifndef snake_test2
-#define snake_test2
 
-typedef struct Player
+#ifndef snake_
+#define snake_
+#include<ncurses.h>
+
+typedef struct Coords
 {
     int x;
     int y;
-}Player;
+}Coords;
 void draw_board(WINDOW * plansza,WINDOW * wynik);
 
 void create_food(WINDOW *plansza);
 
-void snake_length_change(Player ** snake,int length);
+void snake_length_change(Coords ** snake,int length);
 
-bool is_food(WINDOW *plansza,Player *new_head);
+bool is_food(WINDOW *plansza,Coords *new_head);
 
 bool collision(int yp, int xp,WINDOW * plansza);
 
-void tail_change(Player *snake_ptr,Player *new_head,WINDOW * plansza,int s_len);
+void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW * plansza,int s_len);
 
-void mark_wall(WINDOW * plansza,Player *new_head);
-//movement
-bool which_direction(Player **snake_ptr, int action,WINDOW *plansza,Player *new_head);
+void mark_wall(WINDOW * plansza,Coords *new_head);
+
+bool which_direction(Coords **snake_ptr, int action,WINDOW *plansza,Coords *new_head);
 
 bool is_good_move(int act_mv,int next_mv);
 

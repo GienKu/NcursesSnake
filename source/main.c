@@ -6,11 +6,14 @@
 int main()
 {
     srand(time(NULL));
+
 	initscr();
     start_color();
     cbreak();
     noecho();
+
     main_menu();
+    
 	getch();
 	endwin();
 }

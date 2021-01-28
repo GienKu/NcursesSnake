@@ -50,17 +50,16 @@ void create_food(WINDOW *plansza)
     mvwaddch(plansza,yRand,xRand,'@' | COLOR_PAIR(4));
     wrefresh(plansza);
 }
-void snake_length_change(Player ** snake,int length)
+void snake_length_change(Coords **snake,int length)
 {
-    *snake = realloc(*snake, (length+1) * sizeof(Player));
+    *snake = realloc(*snake, (length+1) * sizeof(Coords));
 }
-bool is_food(WINDOW *plansza,Player *new_head)
+bool is_food(WINDOW *plansza,Coords *new_head)
 {
     int y = (new_head)->y;
     int x = (new_head)->x;
     char ch = mvwinch(plansza,y,x);
-    if(ch == '@')return true;
-    return false;
+    return (ch == '@');
 }
 //sprawdzenie czy snake nie uderza w ściane
 bool collision(int yp, int xp,WINDOW * plansza)
@@ -71,11 +70,11 @@ bool collision(int yp, int xp,WINDOW * plansza)
 }
 //przesunięcie wspołrzędnych każdej części snake'a
 //usnięcie ostatniego elementu ogona i dodanie nowej głowy
-void tail_change(Player *snake_ptr,Player *new_head,WINDOW * plansza,int s_len)
+void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW * plansza,int s_len)
 {
     int yNew = (new_head)->y;
     int xNew = (new_head)->x;
-    Player temp1,temp2 = snake_ptr[0];
+    Coords temp1,temp2 = snake_ptr[0];
     for( int i = 1; i < s_len+1; i++)
     {
         temp1 = snake_ptr[i];
@@ -91,7 +90,7 @@ void tail_change(Player *snake_ptr,Player *new_head,WINDOW * plansza,int s_len)
     wrefresh(plansza);
 }
 // zmiana stanu ściany na czerwony po uderzeniu 
-void mark_wall(WINDOW * plansza,Player *new_head)
+void mark_wall(WINDOW * plansza,Coords *new_head)
 {
     int y = (new_head)->y;
     int x = (new_head)->x;
@@ -99,7 +98,7 @@ void mark_wall(WINDOW * plansza,Player *new_head)
     mvwaddch(plansza,y,x,'x' | COLOR_PAIR(3));
 }
 //sprawdzenie kierunku poruszania sie snake'a
-bool which_direction(Player **snake_ptr, int action,WINDOW *plansza,Player *new_head)
+bool which_direction(Coords **snake_ptr, int action,WINDOW *plansza,Coords *new_head)
 {
     int yNext = (*snake_ptr)->y;
     int xNext = (*snake_ptr)->x;
@@ -177,8 +176,8 @@ void main_game_loop(int level)
 {
     WINDOW *score = newwin(3,7,LINES/2-15,COLS/2-32);
     WINDOW *plansza = newwin(25,65,LINES/2-12,COLS/2-32);
-    Player *snake_parts = malloc( 4 * sizeof(Player));
-    Player new_head; 
+    Coords *snake_parts = malloc( 4 * sizeof(Coords));
+    Coords new_head; 
 
     keypad(plansza,true);
     int yPl,xPl,snake_length = 3,scr = 0;
@@ -233,7 +232,7 @@ void main_game_loop(int level)
                 snake_length_change(&snake_parts,snake_length);         //dynamiczna zmiana wielkosci snake'a
                 create_food(plansza);
             }
-            tail_change(snake_parts,&new_head,plansza,snake_length);    //zmiana zmiana koordynatów snake'a
+            tail_change(snake_parts,&new_head,plansza,snake_length);    //zmiana koordynatów snake'a
         }
         else 
         {
@@ -248,7 +247,7 @@ void main_menu()
 {
     WINDOW *MenuContainer = newwin(LINES, COLS, 0, 0);
     WINDOW *MenuPanel = subwin(MenuContainer, 10, 28, LINES/2, COLS/2-8);
-    WINDOW *GameOver = subwin(MenuContainer, LINES/2,79,1,COLS/2-39);
+    WINDOW *MenuAscii = subwin(MenuContainer, LINES/2,79,1,COLS/2-39);
     FILE *picture;
     char ch;
     
@@ -256,26 +255,26 @@ void main_menu()
     init_pair(24, 107, 89);                     //na odwrot^
     init_pair(25,COLOR_WHITE,COLOR_BLACK);      //standardowy kolor terminala
     bkgd(COLOR_PAIR(23));                       //bgcolor stdrscr
-    wbkgd(GameOver,COLOR_PAIR(23));             //bgcolor GameOver
+    wbkgd(MenuAscii,COLOR_PAIR(23));             //bgcolor GameOver
     wbkgd(MenuPanel,COLOR_PAIR(23));            //bgcolor MenuPanel
 
-    picture = fopen("obrazek.txt","r");
+    picture = fopen("data/obrazek.txt","r");
     if(picture == NULL)
-    {   wprintw(GameOver,"Error, nie udalo otworzyc sie pliku");
-        wrefresh(GameOver);
+    {   wprintw(MenuAscii,"Error, nie udalo otworzyc sie pliku");
+        wrefresh(MenuAscii);
     }
-    wmove(GameOver,0,0);
+    wmove(MenuAscii,0,0);
 
     // WYSWIETLENIE ASCII ART
-    wattron(GameOver,COLOR_PAIR(23) | A_BOLD);
+    wattron(MenuAscii,COLOR_PAIR(23) | A_BOLD);
     while((ch = fgetc(picture)) != EOF)
-        waddch(GameOver,ch);
-    wattroff(GameOver,COLOR_PAIR(23) | A_BOLD);
+        waddch(MenuAscii,ch);
+    wattroff(MenuAscii,COLOR_PAIR(23) | A_BOLD);
 
     fclose(picture);
     refresh();
     wrefresh(MenuPanel);
-    wrefresh(GameOver);
+    wrefresh(MenuAscii);
     
     // OPCJE MENU
     mvwprintw(MenuPanel,0,1,"Wybierz poziom trudnosci:");
@@ -363,7 +362,7 @@ void game_over(WINDOW *plansza, WINDOW *score)
     init_pair(20, COLOR_RED, SECOND_COLOR);
     init_pair(11, COLOR_WHITE, COLOR_BLACK);
     wbkgd(GameOver,COLOR_PAIR(20));
-    picture = fopen("gameover.txt","r");
+    picture = fopen("data/gameover.txt","r");
     if(picture == NULL)
     {   wprintw(GameOver,"Error, nie udalo otworzyc sie pliku");
         wrefresh(GameOver);
