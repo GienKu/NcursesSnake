@@ -10,25 +10,32 @@
 #define SNAKE_COLOR 22
 
 //atrybuty,kolory,rysowanie planszy
-void draw_board(WINDOW * plansza,WINDOW * wynik)
+void draw_board(WINDOW *plansza,WINDOW *wynik, WINDOW *highscore,int best)
 {
 	start_color();
-	init_pair(1,COLOR_YELLOW,BG_COLOR);     //krawedzie
-    init_pair(2,SNAKE_COLOR,BG_COLOR);      //snake
-    init_pair(5,154,SECOND_COLOR);          //score     
-
-    wbkgd(wynik,COLOR_PAIR(5));             //bg color
-    //SCORE
+    init_pair(5,154,SECOND_COLOR);          //score & highscore
+    //------WYNIK-------//
+    wbkgd(wynik,COLOR_PAIR(5));             // wynik bg color
     box(wynik,0,0);
-    mvwprintw(wynik,0,1,"Score");
-    //Plansza
+    mvwprintw(wynik,0,1,"SCORE");
+
+    //-------PLANSZA--------//
+    init_pair(1,COLOR_YELLOW,BG_COLOR);     //krawedzie
+    init_pair(2,SNAKE_COLOR,BG_COLOR);  
+        //snake
     wbkgd(plansza,COLOR_PAIR(2));           //bg color
 	wattron(plansza,COLOR_PAIR(1));
 	box(plansza,ACS_VLINE,ACS_HLINE);
-	printw("Test snake");
 	wattroff(plansza,COLOR_PAIR(1));
+
+    //-------HIGHSCORE-------//
+    wbkgd(highscore,COLOR_PAIR(5));             // wynik bg color
+    box(highscore,0,0);
+    mvwprintw(highscore,0,1,"BEST");
+    mvwprintw(highscore,1,1,"%i",best);
     
 	refresh();
+    wrefresh(highscore);
 	wrefresh(plansza);
     wrefresh(wynik);
 }
@@ -62,7 +69,7 @@ bool is_food(WINDOW *plansza,Coords *new_head)
     return (ch == '@');
 }
 //sprawdzenie czy snake nie uderza w ściane
-bool collision(int yp, int xp,WINDOW * plansza)
+bool collision(int yp, int xp,WINDOW *plansza)
 {
     char test = mvwinch(plansza,yp,xp);
     if(test == 'x' || test == 'q' || test == 'o')return false;
@@ -70,7 +77,7 @@ bool collision(int yp, int xp,WINDOW * plansza)
 }
 //przesunięcie wspołrzędnych każdej części snake'a
 //usnięcie ostatniego elementu ogona i dodanie nowej głowy
-void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW * plansza,int s_len)
+void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW *plansza,int s_len)
 {
     int yNew = (new_head)->y;
     int xNew = (new_head)->x;
@@ -90,7 +97,7 @@ void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW * plansza,int s_len)
     wrefresh(plansza);
 }
 // zmiana stanu ściany na czerwony po uderzeniu 
-void mark_wall(WINDOW * plansza,Coords *new_head)
+void mark_wall(WINDOW *plansza,Coords *new_head)
 {
     int y = (new_head)->y;
     int x = (new_head)->x;
@@ -174,12 +181,13 @@ bool is_good_move(int act_mv,int next_mv)
 }
 void main_game_loop(int level)
 {
+    WINDOW *highscore = newwin(3,7,LINES/2-15,COLS/2+26);
     WINDOW *score = newwin(3,7,LINES/2-15,COLS/2-32);
     WINDOW *plansza = newwin(25,65,LINES/2-12,COLS/2-32);
     Coords *snake_parts = malloc( 4 * sizeof(Coords));
     Coords new_head; 
-
-    keypad(plansza,true);
+    FILE *bscores;
+    char *str = malloc(3);
     int yPl,xPl,snake_length = 3,scr = 0;
     bool is_alive = true;
     int actual_move = KEY_RIGHT,next_move;
@@ -187,6 +195,7 @@ void main_game_loop(int level)
     mvwprintw(score,1,1,"%i",scr);
     wrefresh(score);
 
+    keypad(plansza,true);
     getmaxyx(plansza,yPl,xPl);
     for( int i = 0; i < 3; i++)
     {
@@ -195,9 +204,6 @@ void main_game_loop(int level)
         mvwaddch(plansza,snake_parts[i].y,snake_parts[i].x,'o');
     }
  
-    draw_board(plansza,score);
-    create_food(plansza);
-    getch();
     switch (level)
     {
     case 0:
@@ -212,6 +218,21 @@ void main_game_loop(int level)
     default:
         wtimeout(plansza,100);
     }
+    // WYPISANIE HIGHSCORE
+    bscores = fopen("data/bestscore.txt","r");
+
+    int i = 0,sc = 0;
+    for(fgets(str,3,bscores); !(i==level); i++)
+    {
+        fflush(bscores);
+        fgets(str,3,bscores);
+    }
+    sc = strtol(str,NULL,10);
+    fclose(bscores);
+
+    draw_board(plansza,score,highscore,sc);
+    create_food(plansza);
+    getch();
 
     while(is_alive)
     {
@@ -240,6 +261,22 @@ void main_game_loop(int level)
             mark_wall(plansza,&new_head); 
             game_over(plansza,score);
         }          
+    }
+    // SPRAWDZENIE HIGHSCORE
+    int cntr = 0;
+    if(scr > sc)
+    {
+        bscores = fopen("data/bestscore.txt","r+");
+        do
+        {
+            if(cntr == level)
+            {
+                fprintf(bscores,"%d",scr);
+                break;
+            }
+            cntr++;
+        }while((fgets(str,3,bscores)) != NULL);
+        fclose(bscores);
     }
     main_menu();
 }
