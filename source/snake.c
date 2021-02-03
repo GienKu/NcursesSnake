@@ -5,31 +5,47 @@
 #include <time.h>
 #include "snake.h"
 
+//KOLORY
+#define FONT_SCORE_COLOR 154
+#define BG_SCORE_COLOR 38
 #define BG_COLOR 40
-#define SECOND_COLOR 38
 #define SNAKE_COLOR 22
+#define FOOD_COLOR 160
+#define MAIN_MENU_FONT 89
+#define MAIN_MENU_BG 107
+
+// ID PAR KOLOROW
+#define ID_EDGES 1
+#define ID_SNAKE 2
+#define ID_MENU 3
+#define ID_FOOD 4
+#define ID_SCORE 5
+#define ID_MENU_REVERSED 6
+#define ID_STANDARD 7
+#define ID_GAMEOVER 8
+#define ID_MARK_WALL 9
 
 //atrybuty,kolory,rysowanie planszy
 void draw_board(WINDOW *plansza,WINDOW *wynik, WINDOW *highscore,int best)
 {
 	start_color();
-    init_pair(5,154,SECOND_COLOR);          //score & highscore
+    init_pair(ID_SCORE, FONT_SCORE_COLOR, BG_SCORE_COLOR);          //score & highscore
     //------WYNIK-------//
-    wbkgd(wynik,COLOR_PAIR(5));             // wynik bg color
+    wbkgd(wynik,COLOR_PAIR(ID_SCORE));                              // wynik bg color
     box(wynik,0,0);
     mvwprintw(wynik,0,1,"SCORE");
 
     //-------PLANSZA--------//
-    init_pair(1,COLOR_YELLOW,BG_COLOR);     //krawedzie
-    init_pair(2,SNAKE_COLOR,BG_COLOR);  
+    init_pair(1,COLOR_YELLOW, BG_COLOR);                //krawedzie
+    init_pair(2,SNAKE_COLOR, BG_COLOR);  
         //snake
-    wbkgd(plansza,COLOR_PAIR(2));           //bg color
-	wattron(plansza,COLOR_PAIR(1));
-	box(plansza,ACS_VLINE,ACS_HLINE);
-	wattroff(plansza,COLOR_PAIR(1));
+    wbkgd(plansza, COLOR_PAIR(ID_SNAKE));               //bg color
+	wattron(plansza, COLOR_PAIR(ID_EDGES));
+	box(plansza, ACS_VLINE, ACS_HLINE);
+	wattroff(plansza, COLOR_PAIR(ID_EDGES));
 
     //-------HIGHSCORE-------//
-    wbkgd(highscore,COLOR_PAIR(5));             // wynik bg color
+    wbkgd(highscore,COLOR_PAIR(ID_SCORE));              // wynik bg color
     box(highscore,0,0);
     mvwprintw(highscore,0,1,"BEST");
     mvwprintw(highscore,1,1,"%i",best);
@@ -39,24 +55,26 @@ void draw_board(WINDOW *plansza,WINDOW *wynik, WINDOW *highscore,int best)
 	wrefresh(plansza);
     wrefresh(wynik);
 }
-// odzywianie snake'a
+// utworzenie jedzenia dla snake'a
 void create_food(WINDOW *plansza)
 {
-    init_pair(4,160,BG_COLOR);
+    init_pair(ID_FOOD, FOOD_COLOR, BG_COLOR);
     int xRand = rand()%64;
     int yRand = rand()%24;
-    char ch;
+    char ch = mvwinch(plansza,yRand,xRand);
     while(xRand == 0 || xRand%2 != 0 ||
           yRand == 0 || yRand%2 != 0 ||
-         ((ch = mvwinch(plansza,yRand,xRand))) == 'o')
+          ch == 'o')
     {
-            xRand = rand()%64;
-            yRand = rand()%24;
+        xRand = rand()%64;
+        yRand = rand()%24;
+        ch = mvwinch(plansza,yRand,xRand);
     }
 
-    mvwaddch(plansza,yRand,xRand,'@' | COLOR_PAIR(4));
+    mvwaddch(plansza,yRand,xRand,'@' | COLOR_PAIR(ID_FOOD));
     wrefresh(plansza);
 }
+//zmiana długości snake'a
 void snake_length_change(Coords **snake,int length)
 {
     *snake = realloc(*snake, (length+1) * sizeof(Coords));
@@ -77,7 +95,7 @@ bool collision(int yp, int xp,WINDOW *plansza)
 }
 //przesunięcie wspołrzędnych każdej części snake'a
 //usnięcie ostatniego elementu ogona i dodanie nowej głowy
-void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW *plansza,int s_len)
+void tail_change(Coords *snake_ptr, Coords *new_head, WINDOW *plansza, int s_len)
 {
     int yNew = (new_head)->y;
     int xNew = (new_head)->x;
@@ -91,21 +109,22 @@ void tail_change(Coords *snake_ptr,Coords *new_head,WINDOW *plansza,int s_len)
     snake_ptr[0].y = yNew;
     snake_ptr[0].x = xNew;
     
-    init_pair(10,SNAKE_COLOR,BG_COLOR);
-    mvwaddch(plansza,snake_ptr[0].y, snake_ptr[0].x,'o' | COLOR_PAIR(10));
+    init_pair(ID_SNAKE, SNAKE_COLOR, BG_COLOR);
+    mvwaddch(plansza,snake_ptr[0].y, snake_ptr[0].x,'o' | COLOR_PAIR(ID_SNAKE));
     mvwaddch(plansza,snake_ptr[s_len].y, snake_ptr[s_len].x,' ');
     wrefresh(plansza);
 }
-// zmiana stanu ściany na czerwony po uderzeniu 
-void mark_wall(WINDOW *plansza,Coords *new_head)
+// zmiana stanu ściany lub ogona na czerwony po uderzeniu 
+void mark_wall(WINDOW *plansza, Coords *new_head)
 {
-    int y = (new_head)->y;
-    int x = (new_head)->x;
-    init_pair(3,COLOR_RED,BG_COLOR);
-    mvwaddch(plansza,y,x,'x' | COLOR_PAIR(3));
+    int y = new_head->y;
+    int x = new_head->x;
+    init_pair(ID_MARK_WALL, COLOR_RED, BG_COLOR);
+    mvwaddch(plansza, y, x, 'x' | COLOR_PAIR(ID_MARK_WALL));
+    wrefresh(plansza);
 }
-//sprawdzenie kierunku poruszania sie snake'a
-bool which_direction(Coords **snake_ptr, int action,WINDOW *plansza,Coords *new_head)
+//sprawdzenie kierunku poruszania sie snake'a i kolizji
+bool which_direction(Coords **snake_ptr, int action, WINDOW *plansza, Coords *new_head)
 {
     int yNext = (*snake_ptr)->y;
     int xNext = (*snake_ptr)->x;
@@ -148,6 +167,7 @@ bool which_direction(Coords **snake_ptr, int action,WINDOW *plansza,Coords *new_
             return true;
     }
 }
+// Sprawdzenie czy wprowadzony truch nie jest przeciwny do aktualnego
 bool is_good_move(int act_mv,int next_mv)
 {
     switch (next_mv)
@@ -187,7 +207,11 @@ void main_game_loop(int level)
     Coords *snake_parts = malloc( 4 * sizeof(Coords));
     Coords new_head; 
     FILE *bscores;
-    char *str = malloc(3);
+    char scrs[3][3] = {
+                        {"000"},
+                        {"000"},
+                        {"000"}
+    };
     int yPl,xPl,snake_length = 3,scr = 0;
     bool is_alive = true;
     int actual_move = KEY_RIGHT,next_move;
@@ -206,32 +230,32 @@ void main_game_loop(int level)
  
     switch (level)
     {
-    case 0:
-        wtimeout(plansza,125);
-        break;
-    case 1:
-        wtimeout(plansza,100);
-        break;
-    case 2:
-        wtimeout(plansza,75);
-        break;
-    default:
-        wtimeout(plansza,100);
+        case 0:
+            wtimeout(plansza,125);
+            break;
+        case 1:
+            wtimeout(plansza,100);
+            break;
+        case 2:
+            wtimeout(plansza,75);
+            break;
+        default:
+            wtimeout(plansza,100);
     }
-    // WYPISANIE HIGHSCORE
+    // ---------WYPISANIE HIGHSCORE-----------
     bscores = fopen("data/bestscore.txt","r");
-
     int i = 0,sc = 0;
-    for(fgets(str,3,bscores); !(i==level); i++)
-    {
-        fflush(bscores);
-        fgets(str,3,bscores);
+    while((fscanf(bscores,"%s",scrs[i])) != -1){
+        i++;
     }
-    sc = strtol(str,NULL,10);
+    sc = strtol(scrs[level],NULL,10);
     fclose(bscores);
+    //----------------------------------------
 
     draw_board(plansza,score,highscore,sc);
     create_food(plansza);
+    wmove(plansza,0,0);
+    
     getch();
 
     while(is_alive)
@@ -262,22 +286,16 @@ void main_game_loop(int level)
             game_over(plansza,score);
         }          
     }
-    // SPRAWDZENIE HIGHSCORE
-    int cntr = 0;
+    //--------SPRAWDZENIE HIGHSCORE----------
     if(scr > sc)
     {
-        bscores = fopen("data/bestscore.txt","r+");
-        do
-        {
-            if(cntr == level)
-            {
-                fprintf(bscores,"%d",scr);
-                break;
-            }
-            cntr++;
-        }while((fgets(str,3,bscores)) != NULL);
+        sprintf(scrs[level],"%d", scr);
+        bscores = fopen("data/bestscore.txt","w");
+        for(int j = 0; j < 3; j++)
+            fprintf(bscores,"%s\n",scrs[j]);
         fclose(bscores);
     }
+    //----------------------------------------
     main_menu();
 }
 void main_menu()
@@ -288,12 +306,12 @@ void main_menu()
     FILE *picture;
     char ch;
     
-    init_pair(23, 89, 107);                     //font-roz, backg- zielen
-    init_pair(24, 107, 89);                     //na odwrot^
-    init_pair(25,COLOR_WHITE,COLOR_BLACK);      //standardowy kolor terminala
-    bkgd(COLOR_PAIR(23));                       //bgcolor stdrscr
-    wbkgd(MenuAscii,COLOR_PAIR(23));             //bgcolor GameOver
-    wbkgd(MenuPanel,COLOR_PAIR(23));            //bgcolor MenuPanel
+    init_pair(ID_MENU, MAIN_MENU_FONT, MAIN_MENU_BG);               //font-roz, backg- zielen
+    init_pair(ID_MENU_REVERSED, MAIN_MENU_BG, MAIN_MENU_FONT);      //na odwrot^
+    init_pair(ID_STANDARD, COLOR_WHITE, COLOR_BLACK);               //standardowy kolor terminala
+    bkgd(COLOR_PAIR(ID_MENU));                                      //bgcolor stdrscr
+    wbkgd(MenuAscii,COLOR_PAIR(ID_MENU));                           //bgcolor MenuAscii
+    wbkgd(MenuPanel,COLOR_PAIR(ID_MENU));                           //bgcolor MenuPanel
 
     picture = fopen("data/obrazek.txt","r");
     if(picture == NULL)
@@ -303,10 +321,10 @@ void main_menu()
     wmove(MenuAscii,0,0);
 
     // WYSWIETLENIE ASCII ART
-    wattron(MenuAscii,COLOR_PAIR(23) | A_BOLD);
+    wattron(MenuAscii,COLOR_PAIR(ID_MENU) | A_BOLD);
     while((ch = fgetc(picture)) != EOF)
         waddch(MenuAscii,ch);
-    wattroff(MenuAscii,COLOR_PAIR(23) | A_BOLD);
+    wattroff(MenuAscii,COLOR_PAIR(ID_MENU) | A_BOLD);
 
     fclose(picture);
     refresh();
@@ -334,9 +352,9 @@ void main_menu()
         {
             if(i == highlight)
             {   
-                wattron(MenuPanel,COLOR_PAIR(24));
+                wattron(MenuPanel,COLOR_PAIR(ID_MENU_REVERSED));
                 mvwaddstr(MenuPanel, i+1, 1, choices[i]);
-                wattroff(MenuPanel,COLOR_PAIR(24));
+                wattroff(MenuPanel,COLOR_PAIR(ID_MENU_REVERSED));
             }
             else
                 mvwprintw(MenuPanel, i+1, 1, "%s", choices[i]);
@@ -396,9 +414,8 @@ void game_over(WINDOW *plansza, WINDOW *score)
     WINDOW *GameOver = newwin(6, 52, LINES/2-3, COLS/2-25);
     FILE *picture;
     char ch;
-    init_pair(20, COLOR_RED, SECOND_COLOR);
-    init_pair(11, COLOR_WHITE, COLOR_BLACK);
-    wbkgd(GameOver,COLOR_PAIR(20));
+    init_pair(ID_GAMEOVER, COLOR_RED, BG_SCORE_COLOR);
+    wbkgd(GameOver,COLOR_PAIR(ID_GAMEOVER));
     picture = fopen("data/gameover.txt","r");
     if(picture == NULL)
     {   wprintw(GameOver,"Error, nie udalo otworzyc sie pliku");
@@ -413,7 +430,9 @@ void game_over(WINDOW *plansza, WINDOW *score)
     wattroff(GameOver, A_BOLD);
     fclose(picture);
     wrefresh(GameOver);
+    attron(COLOR_PAIR(ID_STANDARD));
     mvprintw(LINES/2+22, COLS/2-21,"Wcisnij dowolny klawisz by wrocic do menu");
+    attroff(COLOR_PAIR(ID_STANDARD));
     getch();
     getch();
 
@@ -423,8 +442,8 @@ void game_over(WINDOW *plansza, WINDOW *score)
     refresh();
     wrefresh(plansza);
     wrefresh(score);
-    wbkgd(plansza,COLOR_PAIR(11));
-    wbkgd(score,COLOR_PAIR(11));
+    wbkgd(plansza,COLOR_PAIR(ID_STANDARD));
+    wbkgd(score,COLOR_PAIR(ID_STANDARD));
     delwin(GameOver);
 
 }
