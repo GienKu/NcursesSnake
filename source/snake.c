@@ -256,8 +256,6 @@ void main_game_loop(int level)
     create_food(plansza);
     wmove(plansza,0,0);
     
-    getch();
-
     while(is_alive)
     {
         if((next_move = wgetch(plansza))  == ERR)                       //Sprawdzenie czy wprowadzony został nowy klawisz
